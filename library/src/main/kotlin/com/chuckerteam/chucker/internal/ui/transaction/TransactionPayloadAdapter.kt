@@ -1,9 +1,7 @@
 package com.chuckerteam.chucker.internal.ui.transaction
 
-import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.text.SpannableStringBuilder
-import android.text.Spanned
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -228,8 +226,8 @@ internal sealed class TransactionPayloadViewHolder(view: View) : RecyclerView.Vi
     }
 }
 
-internal sealed class TransactionPayloadItem {
-    internal class HeaderItem(val headers: Spanned) : TransactionPayloadItem()
-    internal class BodyLineItem(var line: SpannableStringBuilder) : TransactionPayloadItem()
-    internal class ImageItem(val image: Bitmap, val luminance: Double?) : TransactionPayloadItem()
-}
+//internal sealed class TransactionPayloadItem {
+//    internal class HeaderItem(val headers: Spanned) : TransactionPayloadItem()
+//    internal class BodyLineItem(var line: SpannableStringBuilder) : TransactionPayloadItem()
+//    internal class ImageItem(val image: Bitmap, val luminance: Double?) : TransactionPayloadItem()
+//}

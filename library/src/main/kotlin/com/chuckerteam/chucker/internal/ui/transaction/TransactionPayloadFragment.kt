@@ -34,6 +34,8 @@ import com.chuckerteam.chucker.internal.support.calculateLuminance
 import com.chuckerteam.chucker.internal.support.combineLatest
 import com.chuckerteam.chucker.internal.support.gone
 import com.chuckerteam.chucker.internal.support.visible
+import com.google.gson.JsonParser
+import com.google.gson.stream.JsonReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -75,13 +77,15 @@ internal class TransactionPayloadFragment :
         }
 
     private lateinit var payloadBinding: ChuckerFragmentTransactionPayloadBinding
-    private val payloadAdapter = TransactionBodyAdapter()
+
+    //    private val payloadAdapter = TransactionBodyAdapter()
+    private val payloadAdapter2 = TransactionBodyAdapter2()
 
     private var backgroundSpanColor: Int = Color.YELLOW
     private var foregroundSpanColor: Int = Color.RED
     private var backgroundSpanColorSearchItem: Int = Color.GREEN
 
-    private val scrollableIndices = arrayListOf<TransactionBodyAdapter.SearchItemBodyLine>()
+    private val scrollableIndices = arrayListOf<TransactionBodyAdapter2.SearchItemBodyLine>()
     private var currentSearchScrollIndex = -1
     private var currentSearchQuery: String = ""
 
@@ -108,7 +112,7 @@ internal class TransactionPayloadFragment :
 
         payloadBinding.payloadRecyclerView.apply {
             setHasFixedSize(true)
-            adapter = payloadAdapter
+            adapter = payloadAdapter2
         }
 
         viewModel.transaction.combineLatest(viewModel.formatRequestBody).observe(
@@ -122,7 +126,7 @@ internal class TransactionPayloadFragment :
                     if (result.isEmpty()) {
                         showEmptyState()
                     } else {
-                        payloadAdapter.setItems(result)
+                        payloadAdapter2.setItems(result.mapToJsonElements())
                         showPayloadState()
                     }
                     // Invalidating menu, because we need to hide menu items for empty payloads
@@ -142,7 +146,8 @@ internal class TransactionPayloadFragment :
 
     private fun onSearchScrollerButtonClick(goNext: Boolean) {
         // hide the keyboard if visible
-        val inputMethodManager = activity?.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+        val inputMethodManager =
+            activity?.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
         if (inputMethodManager.isAcceptingText) {
             activity?.currentFocus?.clearFocus()
             inputMethodManager.hideSoftInputFromWindow(view?.windowToken, 0)
@@ -223,6 +228,7 @@ internal class TransactionPayloadFragment :
         PayloadType.REQUEST -> {
             (false == transaction?.isRequestBodyEncoded) && (0L != (transaction.requestPayloadSize))
         }
+
         PayloadType.RESPONSE -> {
             (false == transaction?.isResponseBodyEncoded) && (0L != (transaction.responsePayloadSize))
         }
@@ -256,10 +262,14 @@ internal class TransactionPayloadFragment :
 
         if (newText.isNotBlank() && newText.length > NUMBER_OF_IGNORED_SYMBOLS) {
             scrollableIndices.addAll(
-                payloadAdapter.highlightQueryWithColors(newText, backgroundSpanColor, foregroundSpanColor)
+                payloadAdapter2.highlightQueryWithColors(
+                    newText,
+                    backgroundSpanColor,
+                    foregroundSpanColor
+                )
             )
         } else {
-            payloadAdapter.resetHighlight()
+            payloadAdapter2.resetHighlight()
             makeToolbarSearchSummaryVisible(false)
         }
 
@@ -293,7 +303,7 @@ internal class TransactionPayloadFragment :
     private fun scrollToSearchedItemPosition(positionOfScrollableIndices: Int) {
         // reset the last searched item highlight if done
         scrollableIndices.getOrNull(currentSearchScrollIndex)?.let {
-            payloadAdapter.highlightItemWithColorOnPosition(
+            payloadAdapter2.highlightItemWithColorOnPosition(
                 it.indexBodyLine,
                 it.indexStartOfQuerySubString,
                 currentSearchQuery,
@@ -306,7 +316,7 @@ internal class TransactionPayloadFragment :
         val scrollTo = scrollableIndices.getOrNull(positionOfScrollableIndices)
         if (scrollTo != null) {
             // highlight the next navigated item and update toolbar summary text
-            payloadAdapter.highlightItemWithColorOnPosition(
+            payloadAdapter2.highlightItemWithColorOnPosition(
                 scrollTo.indexBodyLine,
                 scrollTo.indexStartOfQuerySubString,
                 currentSearchQuery,
@@ -369,12 +379,24 @@ internal class TransactionPayloadFragment :
             when {
                 isBodyEncoded -> {
                     val text = requireContext().getString(R.string.chucker_body_omitted)
-                    result.add(TransactionPayloadItem.BodyLineItem(SpannableStringBuilder.valueOf(text)))
+                    result.add(
+                        TransactionPayloadItem.BodyLineItem(
+                            SpannableStringBuilder.valueOf(
+                                text
+                            )
+                        )
+                    )
                 }
 
                 bodyString.isBlank() -> {
                     val text = requireContext().getString(R.string.chucker_body_empty)
-                    result.add(TransactionPayloadItem.BodyLineItem(SpannableStringBuilder.valueOf(text)))
+                    result.add(
+                        TransactionPayloadItem.BodyLineItem(
+                            SpannableStringBuilder.valueOf(
+                                text
+                            )
+                        )
+                    )
                 }
 
                 else -> bodyString.lines().forEach {
@@ -393,7 +415,11 @@ internal class TransactionPayloadFragment :
         }
     }
 
-    private suspend fun saveToFile(type: PayloadType, uri: Uri, transaction: HttpTransaction): Boolean {
+    private suspend fun saveToFile(
+        type: PayloadType,
+        uri: Uri,
+        transaction: HttpTransaction
+    ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
                 requireContext().contentResolver.openFileDescriptor(uri, "w")?.use {
@@ -455,5 +481,28 @@ internal class TransactionPayloadFragment :
             result.add(subSequence(0, length))
         }
         return result
+    }
+
+    private fun MutableList<TransactionPayloadItem>.mapToJsonElements(): List<PayloadItemSection> {
+        val bodyBuilder = StringBuilder()
+
+        return mapIndexed { index, item ->
+            if (item is TransactionPayloadItem.BodyLineItem) {
+                bodyBuilder.append(item.line)
+            }
+
+            val payloadItem = PayloadItemSection(
+                headerItem = if (item is TransactionPayloadItem.HeaderItem) item else null,
+                imageItem = if (item is TransactionPayloadItem.ImageItem) item else null
+            )
+
+            if (index == size - 1) {
+                val reader = JsonReader(bodyBuilder.toString().reader())
+                reader.isLenient = true
+                payloadItem.copy(body = JsonParser.parseReader(reader))
+            } else {
+                payloadItem
+            }
+        }
     }
 }

@@ -1,6 +1,5 @@
 package com.chuckerteam.chucker.sample
 
-import com.chuckerteam.chucker.sample.HttpBinHttpTask.Api.Data
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
@@ -29,7 +28,7 @@ class HttpBinHttpTask(
     client: OkHttpClient
 ) : HttpTask {
     private val api = Retrofit.Builder()
-        .baseUrl("https://httpbin.org")
+        .baseUrl("https://openlibrary.org")
         .addConverterFactory(GsonConverterFactory.create())
         .client(client)
         .build()
@@ -45,40 +44,41 @@ class HttpBinHttpTask(
 
     @Suppress("MagicNumber")
     override fun run() = with(api) {
-        get().enqueue(noOpCallback)
-        post(Data("posted")).enqueue(noOpCallback)
-        patch(Data("patched")).enqueue(noOpCallback)
-        put(Data("put")).enqueue(noOpCallback)
-        delete().enqueue(noOpCallback)
-        status(201).enqueue(noOpCallback)
-        status(401).enqueue(noOpCallback)
-        status(500).enqueue(noOpCallback)
-        delay(9).enqueue(noOpCallback)
-        delay(15).enqueue(noOpCallback)
-        redirectTo("https://http2.akamai.com").enqueue(noOpCallback)
-        redirect(3).enqueue(noOpCallback)
-        redirectRelative(2).enqueue(noOpCallback)
-        redirectAbsolute(4).enqueue(noOpCallback)
-        stream(500).enqueue(noOpCallback)
-        streamBytes(2048).enqueue(noOpCallback)
-        image("image/png").enqueue(noOpCallback)
-        brotliResponse().enqueue(noOpCallback)
-        gzipResponse().enqueue(noOpCallback)
-        gzipRequest(Data("Some gzip request")).enqueue(noOpCallback)
-        xml().enqueue(noOpCallback)
-        utf8().enqueue(noOpCallback)
-        deflate().enqueue(noOpCallback)
-        cookieSet("v").enqueue(noOpCallback)
-        basicAuth("me", "pass").enqueue(noOpCallback)
-        drip(512, 10, 1, 200).enqueue(noOpCallback)
-        deny().enqueue(noOpCallback)
-        cache("Mon").enqueue(noOpCallback)
-        cache(30).enqueue(noOpCallback)
-        redirectTo("https://ascii.cl?parameter=%22Click+on+%27URL+Encode%27%21%22").enqueue(noOpCallback)
-        redirectTo("https://ascii.cl?parameter=\"Click on 'URL Encode'!\"").enqueue(noOpCallback)
-        postForm("Value 1", "Value with symbols &$%").enqueue(noOpCallback)
-        postRawRequestBody(oneShotRequestBody()).enqueue(noOpCallback)
-        anything().enqueue(noOpCallback)
+        getChuckNorris().enqueue(noOpCallback)
+//        get().enqueue(noOpCallback)
+//        post(Data("posted")).enqueue(noOpCallback)
+//        patch(Data("patched")).enqueue(noOpCallback)
+//        put(Data("put")).enqueue(noOpCallback)
+//        delete().enqueue(noOpCallback)
+//        status(201).enqueue(noOpCallback)
+//        status(401).enqueue(noOpCallback)
+//        status(500).enqueue(noOpCallback)
+//        delay(9).enqueue(noOpCallback)
+//        delay(15).enqueue(noOpCallback)
+//        redirectTo("https://http2.akamai.com").enqueue(noOpCallback)
+//        redirect(3).enqueue(noOpCallback)
+//        redirectRelative(2).enqueue(noOpCallback)
+//        redirectAbsolute(4).enqueue(noOpCallback)
+//        stream(500).enqueue(noOpCallback)
+//        streamBytes(2048).enqueue(noOpCallback)
+//        image("image/png").enqueue(noOpCallback)
+//        brotliResponse().enqueue(noOpCallback)
+//        gzipResponse().enqueue(noOpCallback)
+//        gzipRequest(Data("Some gzip request")).enqueue(noOpCallback)
+//        xml().enqueue(noOpCallback)
+//        utf8().enqueue(noOpCallback)
+//        deflate().enqueue(noOpCallback)
+//        cookieSet("v").enqueue(noOpCallback)
+//        basicAuth("me", "pass").enqueue(noOpCallback)
+//        drip(512, 10, 1, 200).enqueue(noOpCallback)
+//        deny().enqueue(noOpCallback)
+//        cache("Mon").enqueue(noOpCallback)
+//        cache(30).enqueue(noOpCallback)
+//        redirectTo("https://ascii.cl?parameter=%22Click+on+%27URL+Encode%27%21%22").enqueue(noOpCallback)
+//        redirectTo("https://ascii.cl?parameter=\"Click on 'URL Encode'!\"").enqueue(noOpCallback)
+//        postForm("Value 1", "Value with symbols &$%").enqueue(noOpCallback)
+//        postRawRequestBody(oneShotRequestBody()).enqueue(noOpCallback)
+//        anything().enqueue(noOpCallback)
     }
 
     private fun oneShotRequestBody() = object : RequestBody() {
@@ -94,6 +94,9 @@ class HttpBinHttpTask(
     private interface Api {
         @GET("/get")
         fun get(): Call<Any?>
+
+        @GET("/authors/OL33421A.json")
+        fun getChuckNorris(): Call<Any?>
 
         @POST("/post")
         fun post(@Body body: Data): Call<Any?>
