@@ -28,7 +28,7 @@ class HttpBinHttpTask(
     client: OkHttpClient
 ) : HttpTask {
     private val api = Retrofit.Builder()
-        .baseUrl("https://openlibrary.org")
+        .baseUrl("http://192.168.0.5:5001")
         .addConverterFactory(GsonConverterFactory.create())
         .client(client)
         .build()
@@ -44,7 +44,8 @@ class HttpBinHttpTask(
 
     @Suppress("MagicNumber")
     override fun run() = with(api) {
-        getChuckNorris().enqueue(noOpCallback)
+        getMenus().enqueue(noOpCallback)
+        getEstablishments().enqueue(noOpCallback)
 //        get().enqueue(noOpCallback)
 //        post(Data("posted")).enqueue(noOpCallback)
 //        patch(Data("patched")).enqueue(noOpCallback)
@@ -95,8 +96,12 @@ class HttpBinHttpTask(
         @GET("/get")
         fun get(): Call<Any?>
 
-        @GET("/authors/OL33421A.json")
-        fun getChuckNorris(): Call<Any?>
+        @GET("/api/menus")
+        fun getMenus(): Call<Any?>
+
+        @GET("/api/establishments")
+        fun getEstablishments(): Call<Any?>
+
 
         @POST("/post")
         fun post(@Body body: Data): Call<Any?>

@@ -47,7 +47,7 @@
 
     <TextView
         android:id="@+id/txtStartValue"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/chucker_base_grid"
         android:gravity="start"

@@ -204,6 +204,18 @@ internal sealed class TransactionPayloadViewHolder2(view: View) : RecyclerView.V
 
             with(bodyBinding) {
                 when {
+                    body.isJsonPrimitive -> {
+                        imgExpand.visibility = View.GONE
+                        rvSectionData.visibility = View.GONE
+                        txtStartValue.text = body.asString.plus(",")
+                    }
+
+                    body.isJsonArray -> {
+                        body.asJsonArray.forEach {
+                            it.asJsonObject.showProperties()
+                        }
+                    }
+
                     body.isJsonObject -> {
                         val obj = body.asJsonObject
                         val keys = obj.keySet()
@@ -217,79 +229,66 @@ internal sealed class TransactionPayloadViewHolder2(view: View) : RecyclerView.V
 
                             txtKey.text = key
                             when {
+                                value.isJsonObject -> {
+                                    root.setClickForValue(element = value)
+                                }
+
                                 value.isJsonPrimitive -> {
                                     imgExpand.visibility = View.GONE
                                     txtStartValue.text = value.asString
                                 }
-
-                                value.isJsonObject -> {
-                                    imgExpand.visibility = View.VISIBLE
-                                    txtStartValue.text = "{...}"
-                                    root.setOnClickListener {
-                                        txtStartValue.text = "{"
-                                        rvSectionData.visibility = View.VISIBLE
-                                        rvSectionData.adapter = TransactionBodyAdapter2()
-                                            .also { adapter ->
-                                                adapter.setItems(
-                                                    listOf(PayloadItemSection(body = value))
-                                                )
-                                            }
-                                        txtEndValue.text = "}"
-                                    }
-                                }
-
-                                value.isJsonArray -> {
-                                    txtStartValue.text = "[...]"
-                                }
-
-                                else -> txtStartValue.text = "empty"
                             }
                         } else {
                             // { "key1" : "value1", "key2" : "value2" }
-                            val attrList = mutableListOf<PayloadItemSection>()
-                            for ((key, value) in obj.entrySet()) {
-                                JsonObject().also {
-                                    it.add(key, value)
-                                    attrList.add(PayloadItemSection(body = it))
-                                }
-                            }
-
-                            rvSectionData.visibility = View.VISIBLE
-                            rvSectionData.adapter = TransactionBodyAdapter2()
-                                .also { adapter ->
-                                    adapter.setItems(attrList)
-                                }
+                            obj.showProperties()
                         }
                     }
 
-                    body.isJsonArray -> {
-                        imgExpand.visibility = View.VISIBLE
-                        txtStartValue.text = "[...]"
+                    else -> Unit
+                }
+            }
+        }
 
-                        root.setOnClickListener { _ ->
-                            rvSectionData.visibility = View.VISIBLE
-                            txtStartValue.text = "["
+        private fun JsonObject.showProperties() {
+            val attrList = mutableListOf<PayloadItemSection>()
 
-                            body.asJsonArray
-                                .map { PayloadItemSection(body = it) }
-                                .run {
-                                    rvSectionData.adapter =
-                                        TransactionBodyAdapter2().also { adapter ->
-                                            adapter.setItems(this)
-                                        }
-                                }
+            for ((key, value) in entrySet()) {
+                JsonObject().also {
+                    it.add(key, value)
+                    attrList.add(PayloadItemSection(body = it))
+                }
+            }
 
-                            txtEndValue.text = "]"
-                        }
-                    }
+            bodyBinding.rvSectionData.visibility = View.VISIBLE
+            bodyBinding.rvSectionData.adapter = TransactionBodyAdapter2().also { adapter ->
+                adapter.setItems(attrList)
+            }
+        }
 
-                    body.isJsonPrimitive -> {
-                        imgExpand.visibility = View.GONE
-                        rvSectionData.visibility = View.GONE
-                        txtStartValue.text = body.asString.plus(",")
-                    }
+        private fun View.setClickForValue(element: JsonElement) = with(bodyBinding) {
+            var isOpen = false
 
-                    else -> body.asJsonObject.entrySet()
+            imgExpand.visibility = View.VISIBLE
+            txtStartValue.text = if (element.isJsonObject) "{...}" else "[...]"
+
+            setOnClickListener {
+                isOpen = isOpen.not()
+                imgExpand.animate().rotationBy(180f * -1)
+
+                if (isOpen) {
+                    rvSectionData.visibility = View.VISIBLE
+                    txtStartValue.text = if (element.isJsonObject) "{" else "["
+                    txtEndValue.text = if (element.isJsonObject) "}" else "]"
+                } else {
+                    rvSectionData.visibility = View.GONE
+                    txtStartValue.text = if (element.isJsonObject) "{..}" else "[...]"
+                    txtEndValue.text = ""
+                }
+
+                rvSectionData.adapter = TransactionBodyAdapter2().also { adapter ->
+                    adapter.setItems(
+                        listOf(PayloadItemSection(body = element))
+                    )
                 }
             }
         }
