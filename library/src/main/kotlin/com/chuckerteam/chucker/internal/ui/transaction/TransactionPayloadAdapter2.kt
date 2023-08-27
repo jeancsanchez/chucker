@@ -18,6 +18,7 @@ import com.chuckerteam.chucker.internal.support.SpanTextUtil
 import com.chuckerteam.chucker.internal.support.highlightWithDefinedColors
 import com.chuckerteam.chucker.internal.support.highlightWithDefinedColorsSubstring
 import com.chuckerteam.chucker.internal.support.indicesOf
+import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 
@@ -196,7 +197,7 @@ internal sealed class TransactionPayloadViewHolder2(view: View) : RecyclerView.V
 
         override fun bind(item: PayloadItemSection) {
             if (item.body == null) {
-                bodyBinding.root.visibility = View.GONE
+                bodyBinding.clRoot.visibility = View.GONE
                 return
             }
 
@@ -211,9 +212,7 @@ internal sealed class TransactionPayloadViewHolder2(view: View) : RecyclerView.V
                     }
 
                     body.isJsonArray -> {
-                        body.asJsonArray.forEach {
-                            it.asJsonObject.showProperties()
-                        }
+                        body.asJsonArray.showArrayObjects()
                     }
 
                     body.isJsonObject -> {
@@ -225,21 +224,34 @@ internal sealed class TransactionPayloadViewHolder2(view: View) : RecyclerView.V
                         // { "key" : "value" }
                         if (keys.size == 1) {
                             val key = obj.keySet().first()
-                            val value = obj.get(key)
+                            val value: JsonElement = obj.get(key) ?: return
+                            val keyText = "\"" + key + "\""
 
-                            txtKey.text = key
+                            imgExpand.visibility = View.GONE
+                            txtKey.text = keyText
+
                             when {
+                                value.isJsonPrimitive -> {
+                                    val text = "\"" + value.asString + "\","
+                                    txtStartValue.text = text
+                                    txtEndValue.visibility = View.GONE
+                                }
+
                                 value.isJsonObject -> {
                                     root.setClickForValue(element = value)
                                 }
 
-                                value.isJsonPrimitive -> {
-                                    imgExpand.visibility = View.GONE
-                                    txtStartValue.text = value.asString
+                                value.isJsonArray -> {
+                                    root.setClickForValue(element = value)
                                 }
                             }
                         } else {
                             // { "key1" : "value1", "key2" : "value2" }
+                            imgExpand.visibility = View.GONE
+                            txtKey.visibility = View.GONE
+                            txtDivider.visibility = View.GONE
+                            txtStartValue.visibility = View.GONE
+                            txtEndValue.visibility = View.GONE
                             obj.showProperties()
                         }
                     }
@@ -265,11 +277,30 @@ internal sealed class TransactionPayloadViewHolder2(view: View) : RecyclerView.V
             }
         }
 
+        private fun JsonArray.showArrayObjects() {
+            map {
+                PayloadItemSection(body = it.asJsonObject)
+            }.also { list ->
+                with(bodyBinding) {
+                    imgExpand.visibility = View.GONE
+                    txtKey.visibility = View.GONE
+                    txtDivider.visibility = View.GONE
+                    txtStartValue.visibility = View.GONE
+                    txtEndValue.visibility = View.GONE
+                    rvSectionData.visibility = View.VISIBLE
+                    rvSectionData.adapter = TransactionBodyAdapter2().also { adapter ->
+                        adapter.setItems(list)
+                    }
+                }
+            }
+        }
+
         private fun View.setClickForValue(element: JsonElement) = with(bodyBinding) {
             var isOpen = false
 
             imgExpand.visibility = View.VISIBLE
             txtStartValue.text = if (element.isJsonObject) "{...}" else "[...]"
+            txtEndValue.visibility = View.GONE
 
             setOnClickListener {
                 isOpen = isOpen.not()
@@ -278,11 +309,12 @@ internal sealed class TransactionPayloadViewHolder2(view: View) : RecyclerView.V
                 if (isOpen) {
                     rvSectionData.visibility = View.VISIBLE
                     txtStartValue.text = if (element.isJsonObject) "{" else "["
+                    txtEndValue.visibility = View.VISIBLE
                     txtEndValue.text = if (element.isJsonObject) "}" else "]"
                 } else {
                     rvSectionData.visibility = View.GONE
-                    txtStartValue.text = if (element.isJsonObject) "{..}" else "[...]"
-                    txtEndValue.text = ""
+                    txtStartValue.text = if (element.isJsonObject) "{...}" else "[...]"
+                    txtEndValue.visibility = View.GONE
                 }
 
                 rvSectionData.adapter = TransactionBodyAdapter2().also { adapter ->
