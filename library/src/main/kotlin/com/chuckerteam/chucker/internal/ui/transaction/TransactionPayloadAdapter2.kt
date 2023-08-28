@@ -1,5 +1,6 @@
 package com.chuckerteam.chucker.internal.ui.transaction
 
+import android.animation.Animator
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.text.SpannableStringBuilder
@@ -302,26 +303,40 @@ internal sealed class TransactionPayloadViewHolder2(view: View) : RecyclerView.V
             txtStartValue.text = if (element.isJsonObject) "{...}" else "[...]"
             txtEndValue.visibility = View.GONE
 
-            setOnClickListener {
+            setOnClickListener { view ->
                 isOpen = isOpen.not()
-                imgExpand.animate().rotationBy(180f * -1)
 
-                if (isOpen) {
-                    rvSectionData.visibility = View.VISIBLE
-                    txtStartValue.text = if (element.isJsonObject) "{" else "["
-                    txtEndValue.visibility = View.VISIBLE
-                    txtEndValue.text = if (element.isJsonObject) "}" else "]"
-                } else {
-                    rvSectionData.visibility = View.GONE
-                    txtStartValue.text = if (element.isJsonObject) "{...}" else "[...]"
-                    txtEndValue.visibility = View.GONE
-                }
+                imgExpand.animate()
+                    .rotationBy(if (isOpen) 180f else -180f)
+                    .setListener(object : Animator.AnimatorListener {
+                        override fun onAnimationStart(p0: Animator) {
+                            view.isClickable = false
+                        }
 
-                rvSectionData.adapter = TransactionBodyAdapter2().also { adapter ->
-                    adapter.setItems(
-                        listOf(PayloadItemSection(body = element))
-                    )
-                }
+                        override fun onAnimationEnd(p0: Animator) {
+                            view.isClickable = true
+
+                            if (isOpen) {
+                                rvSectionData.visibility = View.VISIBLE
+                                txtStartValue.text = if (element.isJsonObject) "{" else "["
+                                txtEndValue.visibility = View.VISIBLE
+                                txtEndValue.text = if (element.isJsonObject) "}" else "]"
+                            } else {
+                                rvSectionData.visibility = View.GONE
+                                txtStartValue.text = if (element.isJsonObject) "{...}" else "[...]"
+                                txtEndValue.visibility = View.GONE
+                            }
+
+                            rvSectionData.adapter = TransactionBodyAdapter2().also { adapter ->
+                                adapter.setItems(
+                                    listOf(PayloadItemSection(body = element))
+                                )
+                            }
+                        }
+
+                        override fun onAnimationCancel(p0: Animator) {}
+                        override fun onAnimationRepeat(p0: Animator) {}
+                    })
             }
         }
     }
