@@ -239,7 +239,13 @@ internal sealed class TransactionPayloadViewHolder2(view: View) : RecyclerView.V
                                 }
 
                                 value.isJsonObject -> {
-                                    root.setClickForValue(element = value)
+                                    if (value.asJsonObject.isEmpty) {
+                                        rvSectionData.visibility = View.GONE
+                                        txtStartValue.text = "{},"
+                                        txtEndValue.visibility = View.GONE
+                                    } else {
+                                        root.setClickForValue(element = value)
+                                    }
                                 }
 
                                 value.isJsonArray -> {
@@ -320,10 +326,10 @@ internal sealed class TransactionPayloadViewHolder2(view: View) : RecyclerView.V
                                 rvSectionData.visibility = View.VISIBLE
                                 txtStartValue.text = if (element.isJsonObject) "{" else "["
                                 txtEndValue.visibility = View.VISIBLE
-                                txtEndValue.text = if (element.isJsonObject) "}" else "]"
+                                txtEndValue.text = if (element.isJsonObject) "}," else "],"
                             } else {
                                 rvSectionData.visibility = View.GONE
-                                txtStartValue.text = if (element.isJsonObject) "{...}" else "[...]"
+                                txtStartValue.text = if (element.isJsonObject) "{...}," else "[...],"
                                 txtEndValue.visibility = View.GONE
                             }
 
