@@ -390,13 +390,7 @@ internal class TransactionPayloadFragment :
 
                 bodyString.isBlank() -> {
                     val text = requireContext().getString(R.string.chucker_body_empty)
-                    result.add(
-                        TransactionPayloadItem.BodyLineItem(
-                            SpannableStringBuilder.valueOf(
-                                text
-                            )
-                        )
-                    )
+                    result.add(TransactionPayloadItem.BodyLineItem(SpannableStringBuilder.valueOf(text)))
                 }
 
                 else -> bodyString.lines().forEach {
@@ -415,11 +409,7 @@ internal class TransactionPayloadFragment :
         }
     }
 
-    private suspend fun saveToFile(
-        type: PayloadType,
-        uri: Uri,
-        transaction: HttpTransaction
-    ): Boolean {
+    private suspend fun saveToFile(type: PayloadType, uri: Uri, transaction: HttpTransaction): Boolean {
         return withContext(Dispatchers.IO) {
             try {
                 requireContext().contentResolver.openFileDescriptor(uri, "w")?.use {
